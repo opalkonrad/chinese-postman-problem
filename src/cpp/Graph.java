@@ -5,20 +5,14 @@ import java.util.LinkedList;
 
 public class Graph {
 
-    private int edgesCount;
     private HashMap<Vertex, LinkedList<Edge>> adjList;
 
     public Graph() {
-        this.edgesCount = 0;
         this.adjList = new HashMap<>();
     }
 
-    public int getVerticesCount() {
-        return adjList.size();
-    }
-
-    public int getEdgesCount() {
-        return edgesCount;
+    public HashMap<Vertex, LinkedList<Edge>> getAdjList() {
+        return adjList;
     }
 
     public void addVertex(int x, int y) {
@@ -63,8 +57,21 @@ public class Graph {
             return;
         }
 
-        adjList.get(vFirst).removeIf(val -> vLast.getX() == val.getEndVertex().getX() && vLast.getY() == val.getEndVertex().getY());
-        adjList.get(vLast).removeIf(val -> vFirst.getX() == val.getEndVertex().getX() && vFirst.getY() == val.getEndVertex().getY());
+        // Delete first occurrence of edge between vFirst and vLast
+        for(Edge edge : adjList.get(vFirst)) {
+            if(vLast.getX() == edge.getEndVertex().getX() && vLast.getY() == edge.getEndVertex().getY()) {
+                adjList.get(vFirst).remove(edge);
+                break;
+            }
+        }
+
+        // Delete first occurrence of edge between vLast and vFirst
+        for(Edge edge : adjList.get(vLast)) {
+            if(vFirst.getX() == edge.getEndVertex().getX() && vFirst.getY() == edge.getEndVertex().getY()) {
+                adjList.get(vLast).remove(edge);
+                break;
+            }
+        }
     }
 
     public void showGraph() {
@@ -75,7 +82,7 @@ public class Graph {
         }
 
         System.out.println("Vertices: " + adjList.size() + ", Edges: " + edges / 2);
-        System.out.println("Begin vertex [End vertex, weight, End vertex, weight...]");
+        System.out.println("Begin vertex [End vertex/weight, End vertex/weight...]");
 
         adjList.forEach((key, value) -> System.out.println(key + " " + value));
     }

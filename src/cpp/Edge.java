@@ -19,6 +19,6 @@ public class Edge {
 
     @Override
     public String toString() {
-        return "end: " + endVertex + ", weight: " + weight;
+        return endVertex + "/" + weight;
     }
 }
