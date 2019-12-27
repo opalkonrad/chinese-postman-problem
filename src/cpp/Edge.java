@@ -9,6 +9,7 @@ public class Edge {
 
     private static DecimalFormat df;
 
+
     public Edge(Vertex endVertex, double weight) {
         this.endVertex = endVertex;
         this.weight = weight;
@@ -28,4 +29,5 @@ public class Edge {
     public String toString() {
         return endVertex + "/" + df.format(weight);
     }
+
 }

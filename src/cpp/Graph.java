@@ -7,6 +7,7 @@ public class Graph {
 
     private HashMap<Vertex, LinkedList<Edge>> adjList;
 
+
     public Graph() {
         this.adjList = new HashMap<>();
     }
@@ -18,7 +19,7 @@ public class Graph {
     public void addVertex(int x, int y) {
         Vertex v = new Vertex(x, y);
 
-        if(adjList.containsKey(v)) {
+        if (adjList.containsKey(v)) {
             return;
         }
 
@@ -58,16 +59,16 @@ public class Graph {
         }
 
         // Delete first occurrence of edge between vFirst and vLast
-        for(Edge edge : adjList.get(vFirst)) {
-            if(vLast.getX() == edge.getEndVertex().getX() && vLast.getY() == edge.getEndVertex().getY()) {
+        for (Edge edge : adjList.get(vFirst)) {
+            if (vLast.getX() == edge.getEndVertex().getX() && vLast.getY() == edge.getEndVertex().getY()) {
                 adjList.get(vFirst).remove(edge);
                 break;
             }
         }
 
         // Delete first occurrence of edge between vLast and vFirst
-        for(Edge edge : adjList.get(vLast)) {
-            if(vFirst.getX() == edge.getEndVertex().getX() && vFirst.getY() == edge.getEndVertex().getY()) {
+        for (Edge edge : adjList.get(vLast)) {
+            if (vFirst.getX() == edge.getEndVertex().getX() && vFirst.getY() == edge.getEndVertex().getY()) {
                 adjList.get(vLast).remove(edge);
                 break;
             }
