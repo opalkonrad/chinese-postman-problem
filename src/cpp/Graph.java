@@ -26,6 +26,16 @@ public class Graph {
         adjList.put(v, new LinkedList<>());
     }
 
+    public void addVertices(LinkedList<Vertex> vertices) {
+        for (Vertex vertex : vertices) {
+            if (adjList.containsKey(vertex)) {
+                continue;
+            }
+
+            adjList.put(vertex, new LinkedList<>());
+        }
+    }
+
     public void deleteVertex(int x, int y) {
         Vertex v = new Vertex(x, y);
 
@@ -41,6 +51,18 @@ public class Graph {
         Vertex vLast = new Vertex(x2, y2);
 
         double weight = Math.sqrt(Math.pow(vLast.getX() - vFirst.getX(), 2) + Math.pow(vLast.getY() - vFirst.getY(), 2));
+
+        if (!(adjList.containsKey(vFirst) && adjList.containsKey(vLast))) {
+            return;
+        }
+
+        adjList.get(vFirst).add(new Edge(vLast, weight));
+        adjList.get(vLast).add(new Edge(vFirst, weight));
+    }
+
+    public void addEdge(int x1, int y1, int x2, int y2, double weight) {
+        Vertex vFirst = new Vertex(x1, y1);
+        Vertex vLast = new Vertex(x2, y2);
 
         if (!(adjList.containsKey(vFirst) && adjList.containsKey(vLast))) {
             return;

@@ -1,7 +1,6 @@
 package cpp;
 
-import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.*;
 
 public class Algorithm {
 
@@ -29,7 +28,7 @@ public class Algorithm {
         }
         // 2 vertices with odd degree
         else if (oddVertices.size() == 2) {
-            // Find dijkstra's shortest paths starting from first odd degree vertex
+            // Find Dijkstra's shortest paths starting from first odd degree vertex
             DijkstrasResultHolder dijkstrasResult = dijkstrasAlgorithm(g, oddVertices.get(0));
 
             // Double the edges on the shortest path between two odd degree vertices
@@ -46,9 +45,72 @@ public class Algorithm {
         }
         // More than 2 vertices with odd degree (always even number of these vertices)
         else {
-            // TODO
-        }
+            // Create new complete graph on odd degree vertices
+            Graph completeGraph = new Graph();
 
+            completeGraph.addVertices(oddVertices);
+
+            // Secondary adjacent list of vertices used to prevent adding same edge twice
+            HashMap<Vertex, LinkedList<Vertex>> secondaryAdjList = new HashMap<>();
+
+            for (Vertex vertex : completeGraph.getAdjList().keySet()) {
+                secondaryAdjList.put(vertex, new LinkedList<>());
+            }
+
+            // Needed to reconstruct shortest paths between odd degree vertices
+            HashMap<Vertex, HashMap<Vertex, Vertex>> prevVertexList = new HashMap<>();
+
+            // Weight of edges
+            PriorityQueue<Double> weights = new PriorityQueue<>();
+
+            // Find Dijkstra's shortest paths among all odd degree vertices
+            for (Vertex oddVertex : oddVertices) {
+                DijkstrasResultHolder dijkstrasResult = dijkstrasAlgorithm(g, oddVertex);
+
+                // Store shortest paths for current odd degree vertex to other odd degree vertices
+                prevVertexList.put(oddVertex, dijkstrasResult.getPrevVertex());
+
+                // Add edges between current odd degree vertex and other vertices (create complete graph)
+                for (Vertex vertex : dijkstrasResult.getTotalCosts().keySet()) {
+                    // Do not add edges between the same vertex, even degree vertices or ones that are already added
+                    if (dijkstrasResult.getTotalCosts().get(vertex) == 0
+                            || !secondaryAdjList.containsKey(vertex)
+                            || secondaryAdjList.get(vertex).contains(oddVertex)) {
+                        continue;
+                    }
+
+                    completeGraph.addEdge(oddVertex.getX(), oddVertex.getY(), vertex.getX(), vertex.getY(), dijkstrasResult.getTotalCosts().get(vertex));
+                    weights.add(dijkstrasResult.getTotalCosts().get(vertex));
+
+                    secondaryAdjList.get(oddVertex).add(vertex);
+                }
+            }
+
+            // Minimum weight perfect matching list of vertices
+            HashMap<Vertex, Vertex> conn;
+
+            try {
+                // Find minimum weight perfect matching
+                conn = heuristicMinWeightPerfectMatch(completeGraph, weights);
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+                return;
+            }
+
+            // Double the edges in original graph
+            for (Vertex vertex : conn.keySet()) {
+                while (!conn.get(vertex).equals(vertex)) {
+                    // Find previous vertex for end vertex of pair of vertices from connections (min weight perfect matching)
+                    Vertex prevVertex = prevVertexList.get(vertex).get(conn.get(vertex));
+
+                    // Double the edge
+                    g.addEdge(prevVertex.getX(), prevVertex.getY(), conn.get(vertex).getX(), conn.get(vertex).getY());
+
+                    // Update end vertex of pair of vertices from connections (min weight perfect matching)
+                    conn.put(vertex, prevVertex);
+                }
+            }
+        }
 
         System.out.println("Chinese postman problem route:");
         System.out.print("(0,0)");
@@ -56,6 +118,57 @@ public class Algorithm {
         findEulerianCycle(g, new Vertex(0, 0));
 
         System.out.println();
+    }
+
+    private HashMap<Vertex, Vertex> heuristicMinWeightPerfectMatch(Graph completeGraph, PriorityQueue<Double> weights) throws Exception {
+        // There will be number of vertices / 2 new edges
+        int loops = completeGraph.getAdjList().size() / 2;
+
+        HashMap<Vertex, Vertex> conn = new HashMap<>();
+
+        while (loops > 0) {
+            if (weights.peek() == null) {
+                throw new Exception("Priority queue returns null");
+            }
+
+            double currMinWeight = weights.poll();
+            Vertex begin = null;
+            Vertex end = null;
+
+            outerloop:
+            for (Vertex vertex : completeGraph.getAdjList().keySet()) {
+                for (Edge edge : completeGraph.getAdjList().get(vertex)) {
+                    // Find first edge which weight is equal to minimum weight from weights priority queue
+                    if (edge.getWeight() == currMinWeight) {
+                        conn.put(vertex, edge.getEndVertex());
+                        begin = vertex;
+                        end = edge.getEndVertex();
+                        break outerloop;
+                    }
+                }
+            }
+
+            if (begin == null || end == null) {
+                throw new Exception("Begin or end vertex is null");
+            }
+
+            // Remove weight of edge from queue that will be deleted
+            for (Edge edge : completeGraph.getAdjList().get(begin)) {
+                weights.remove(edge.getWeight());
+            }
+
+            for (Edge edge : completeGraph.getAdjList().get(end)) {
+                weights.remove(edge.getWeight());
+            }
+
+            // Delete vertices connected to minimum weight edge
+            completeGraph.deleteVertex(begin.getX(), begin.getY());
+            completeGraph.deleteVertex(end.getX(), end.getY());
+
+            --loops;
+        }
+
+        return conn;
     }
 
     private void findEulerianCycle(Graph g, Vertex v) {
