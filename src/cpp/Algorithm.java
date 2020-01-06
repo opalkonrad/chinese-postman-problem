@@ -110,7 +110,6 @@ public class Algorithm {
 
                 // Store all possible matches
                 findAllMatches(matches, oddVertices, new LinkedList<>());
-                System.out.println(matches);
 
                 // Find minimum weight perfect matching (accurate approach)
                 perfMatch = findPerfectMatch(matches, totalCostsList);
