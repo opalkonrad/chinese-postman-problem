@@ -19,11 +19,16 @@ public class Algorithm {
         return oddVertices;
     }
 
-    public void showCPPRoute(Graph g) {
+    public void showCPPRoute(Graph g, int mode) {
+        // Start in (0, 0)
+        if (!g.getAdjList().containsKey(new Vertex(0, 0))) {
+            return;
+        }
+
         LinkedList<Vertex> oddVertices = countOddDegVerticesAndCheckCohesion(g);
 
-        // Only consistent graph can be solved
-        if (oddVertices == null) {
+        // Only consistent graph can be solved, check mode
+        if (oddVertices == null || !(mode >= 0 && mode <= 1)) {
             return;
         }
         // 2 vertices with odd degree
@@ -47,7 +52,6 @@ public class Algorithm {
         else {
             // Create new complete graph on odd degree vertices
             Graph completeGraph = new Graph();
-
             completeGraph.addVertices(oddVertices);
 
             // Secondary adjacent list of vertices used to prevent adding same edge twice
@@ -57,18 +61,19 @@ public class Algorithm {
                 secondaryAdjList.put(vertex, new LinkedList<>());
             }
 
-            // Needed to reconstruct shortest paths between odd degree vertices
             HashMap<Vertex, HashMap<Vertex, Vertex>> prevVertexList = new HashMap<>();
+            HashMap<Vertex, HashMap<Vertex, Double>> totalCostsList = new HashMap<>();
 
-            // Weight of edges
+            // Weight of edges - queue
             PriorityQueue<Double> weights = new PriorityQueue<>();
 
             // Find Dijkstra's shortest paths among all odd degree vertices
             for (Vertex oddVertex : oddVertices) {
                 DijkstrasResultHolder dijkstrasResult = dijkstrasAlgorithm(g, oddVertex);
 
-                // Store shortest paths for current odd degree vertex to other odd degree vertices
+                // Store results of Dijkstra's algorithm
                 prevVertexList.put(oddVertex, dijkstrasResult.getPrevVertex());
+                totalCostsList.put(oddVertex, dijkstrasResult.getTotalCosts());
 
                 // Add edges between current odd degree vertex and other vertices (create complete graph)
                 for (Vertex vertex : dijkstrasResult.getTotalCosts().keySet()) {
@@ -87,27 +92,41 @@ public class Algorithm {
             }
 
             // Minimum weight perfect matching list of vertices
-            HashMap<Vertex, Vertex> conn;
+            HashMap<Vertex, Vertex> perfMatch;
 
-            try {
-                // Find minimum weight perfect matching
-                conn = heuristicMinWeightPerfectMatch(completeGraph, weights);
-            } catch (Exception e) {
-                System.out.println(e.getMessage());
-                return;
+            // Heuristic
+            if (mode == 0) {
+                try {
+                    // Find minimum weight perfect matching (heuristic approach)
+                    perfMatch = findHeuristicMatch(completeGraph, weights);
+                } catch (Exception e) {
+                    System.out.println(e.getMessage());
+                    return;
+                }
+            }
+            // Accurate
+            else {
+                LinkedList<LinkedList<Vertex>> matches = new LinkedList<>();
+
+                // Store all possible matches
+                findAllMatches(matches, oddVertices, new LinkedList<>());
+                System.out.println(matches);
+
+                // Find minimum weight perfect matching (accurate approach)
+                perfMatch = findPerfectMatch(matches, totalCostsList);
             }
 
             // Double the edges in original graph
-            for (Vertex vertex : conn.keySet()) {
-                while (!conn.get(vertex).equals(vertex)) {
+            for (Vertex vertex : perfMatch.keySet()) {
+                while (!perfMatch.get(vertex).equals(vertex)) {
                     // Find previous vertex for end vertex of pair of vertices from connections (min weight perfect matching)
-                    Vertex prevVertex = prevVertexList.get(vertex).get(conn.get(vertex));
+                    Vertex prevVertex = prevVertexList.get(vertex).get(perfMatch.get(vertex));
 
                     // Double the edge
-                    g.addEdge(prevVertex.getX(), prevVertex.getY(), conn.get(vertex).getX(), conn.get(vertex).getY());
+                    g.addEdge(prevVertex.getX(), prevVertex.getY(), perfMatch.get(vertex).getX(), perfMatch.get(vertex).getY());
 
-                    // Update end vertex of pair of vertices from connections (min weight perfect matching)
-                    conn.put(vertex, prevVertex);
+                    // Update end vertex of pair of vertices from connections (min. weight perfect matching)
+                    perfMatch.put(vertex, prevVertex);
                 }
             }
         }
@@ -120,11 +139,11 @@ public class Algorithm {
         System.out.println();
     }
 
-    private HashMap<Vertex, Vertex> heuristicMinWeightPerfectMatch(Graph completeGraph, PriorityQueue<Double> weights) throws Exception {
+    private HashMap<Vertex, Vertex> findHeuristicMatch(Graph completeGraph, PriorityQueue<Double> weights) throws Exception {
         // There will be number of vertices / 2 new edges
         int loops = completeGraph.getAdjList().size() / 2;
 
-        HashMap<Vertex, Vertex> conn = new HashMap<>();
+        HashMap<Vertex, Vertex> perfMatch = new HashMap<>();
 
         while (loops > 0) {
             if (weights.peek() == null) {
@@ -140,7 +159,7 @@ public class Algorithm {
                 for (Edge edge : completeGraph.getAdjList().get(vertex)) {
                     // Find first edge which weight is equal to minimum weight from weights priority queue
                     if (edge.getWeight() == currMinWeight) {
-                        conn.put(vertex, edge.getEndVertex());
+                        perfMatch.put(vertex, edge.getEndVertex());
                         begin = vertex;
                         end = edge.getEndVertex();
                         break outerloop;
@@ -168,7 +187,64 @@ public class Algorithm {
             --loops;
         }
 
-        return conn;
+        return perfMatch;
+    }
+
+    private void findAllMatches(LinkedList<LinkedList<Vertex>> matches, LinkedList<Vertex> vertices, LinkedList<Vertex> visited) {
+        // First of n vertices can associated with any of other n-1 vertices. After choosing first pair, there are n-2 vertices to consider and so on.
+        if (vertices.isEmpty()) {
+            matches.add(new LinkedList<>(visited));
+            return;
+        }
+
+        if (vertices.size() % 2 == 0) {
+            Vertex firstVertex = vertices.getFirst();
+            visited.add(firstVertex);
+            LinkedList<Vertex> remainingVertices = new LinkedList<>(vertices);
+            remainingVertices.remove(firstVertex);
+            findAllMatches(matches, remainingVertices, visited);
+            visited.removeLast();
+        } else {
+            for (Vertex vertex : vertices) {
+                visited.add(vertex);
+                LinkedList<Vertex> remainingVertices = new LinkedList<>(vertices);
+                remainingVertices.remove(vertex);
+                findAllMatches(matches, remainingVertices, visited);
+                visited.removeLast();
+            }
+        }
+    }
+
+    private HashMap<Vertex, Vertex> findPerfectMatch(LinkedList<LinkedList<Vertex>> matches, HashMap<Vertex, HashMap<Vertex, Double>> totalCostsList) {
+        int bestMatchId = 0;
+        int loopCntr = 0;
+        double bestCost = Double.MAX_VALUE;
+
+        for (LinkedList<Vertex> match : matches) {
+            double cost = 0;
+
+            // Count sum of weights
+            for (int i = 0; i < match.size() - 1; i += 2) {
+                cost += totalCostsList.get(match.get(i)).get(match.get(i + 1));
+            }
+
+            // Update id when smaller sum of costs
+            if (cost < bestCost) {
+                bestCost = cost;
+                bestMatchId = loopCntr;
+            }
+
+            ++loopCntr;
+        }
+
+        HashMap<Vertex, Vertex> bestMatching = new HashMap<>();
+
+        // Fill best connections
+        for (int i = 0; i < matches.get(bestMatchId).size(); i += 2) {
+            bestMatching.put(matches.get(bestMatchId).get(i), matches.get(bestMatchId).get(i + 1));
+        }
+
+        return bestMatching;
     }
 
     private void findEulerianCycle(Graph g, Vertex v) {
