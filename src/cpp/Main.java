@@ -4,6 +4,9 @@ public class Main {
 
     public static void main(String[] args) {
 
+//        Test test = new Test();
+//        test.performCorrectnessTests();
+
         Graph g = new Graph();
         g.generateGraph(30, 6);
         g.showGraph();
@@ -11,5 +14,4 @@ public class Main {
         a.showCPPRoute(g, 0);
 
     }
-
 }
