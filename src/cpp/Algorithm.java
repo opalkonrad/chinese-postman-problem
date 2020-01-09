@@ -4,35 +4,22 @@ import java.util.*;
 
 public class Algorithm {
 
-    public LinkedList<Vertex> countOddDegVerticesAndCheckCohesion(Graph g) {
-        LinkedList<Vertex> oddVertices = new LinkedList<>();
-
-        for (Vertex vertex : g.getAdjList().keySet()) {
-            if (g.getAdjList().get(vertex).size() % 2 != 0) {
-                oddVertices.add(vertex);
-            }
-            if (g.getAdjList().get(vertex).size() < 1) {
-                return null;
-            }
-        }
-
-        return oddVertices;
-    }
-
     public void showCPPRoute(Graph g, int mode) {
         // Start in (0, 0)
         if (!g.getAdjList().containsKey(new Vertex(0, 0))) {
             return;
         }
 
-        LinkedList<Vertex> oddVertices = countOddDegVerticesAndCheckCohesion(g);
-
-        // Only consistent graph can be solved, check mode
-        if (oddVertices == null || !(mode >= 0 && mode <= 1)) {
+        // Only consistent graph can be solved, check mode, check if there are at least one vertex
+        if (!g.isConsistent() || !(mode >= 0 && mode <= 1) || g.getAdjList().size() == 0) {
+            System.out.println("Wrong graph");
             return;
         }
+
+        LinkedList<Vertex> oddVertices = g.getOddDegVertices();
+
         // 2 vertices with odd degree
-        else if (oddVertices.size() == 2) {
+        if (oddVertices.size() == 2) {
             // Find Dijkstra's shortest paths starting from first odd degree vertex
             DijkstrasResultHolder dijkstrasResult = dijkstrasAlgorithm(g, oddVertices.get(0));
 

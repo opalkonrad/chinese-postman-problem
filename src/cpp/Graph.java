@@ -1,11 +1,13 @@
 package cpp;
 
-import java.util.HashMap;
-import java.util.LinkedList;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.*;
 
 public class Graph {
 
     private HashMap<Vertex, LinkedList<Edge>> adjList;
+    Random rand = new Random();
 
 
     public Graph() {
@@ -14,6 +16,47 @@ public class Graph {
 
     public HashMap<Vertex, LinkedList<Edge>> getAdjList() {
         return adjList;
+    }
+
+    public LinkedList<Vertex> getOddDegVertices() {
+        LinkedList<Vertex> oddVertices = new LinkedList<>();
+
+        for (Vertex vertex : adjList.keySet()) {
+            if (adjList.get(vertex).size() % 2 != 0) {
+                oddVertices.add(vertex);
+            }
+        }
+
+        return oddVertices;
+    }
+
+    public boolean isConsistent() {
+        HashMap<Vertex, Boolean> isVisited = new HashMap<>();
+        LinkedList<Vertex> queue = new LinkedList<>();
+
+        for (Vertex vertex : adjList.keySet()) {
+            isVisited.put(vertex, false);
+        }
+
+        Vertex currVertex = new Vertex(0, 0);
+
+        isVisited.put(currVertex, true);
+        queue.add(currVertex);
+        int vertices = 1;
+
+        while (queue.size() != 0) {
+            currVertex = queue.poll();
+
+            for (Edge edge : adjList.get(currVertex)) {
+                if (!isVisited.get(edge.getEndVertex())) {
+                    isVisited.put(edge.getEndVertex(), true);
+                    queue.add(edge.getEndVertex());
+                    ++vertices;
+                }
+            }
+        }
+
+        return adjList.size() == vertices;
     }
 
     public void addVertex(int x, int y) {
@@ -108,6 +151,97 @@ public class Graph {
         System.out.println("Begin vertex [End vertex/weight, End vertex/weight...]");
 
         adjList.forEach((key, value) -> System.out.println(key + " " + value));
+    }
+
+    public void generateGraphFromFile(String path) {
+        File file = new File(path);
+        Scanner sc = null;
+        try {
+            sc = new Scanner(file);
+        } catch (FileNotFoundException e) {
+            System.out.println("File not found");
+            return;
+        }
+
+        while (sc.hasNext()) {
+            int x1, y1, x2, y2;
+            x1 = sc.nextInt();
+            y1 = sc.nextInt();
+            x2 = sc.nextInt();
+            y2 = sc.nextInt();
+            addVertex(x1, y1);
+            addVertex(x2, y2);
+            addEdge(x1, y1, x2, y2);
+        }
+    }
+
+    public void generateGraph(int vertices, int oddDegVertices) {
+        if (oddDegVertices > vertices || oddDegVertices % 2 != 0 || oddDegVertices < 0 || vertices == 0) {
+            System.out.println("Wrong requirements");
+            return;
+        }
+
+        int min = -100;
+        int max = 100;
+        int x;
+        int y;
+        LinkedList<Vertex> verticesList = new LinkedList<>();
+
+        // Add starting vertex
+        addVertex(0, 0);
+        verticesList.add(new Vertex(0, 0));
+
+        // Add vertices
+        while (adjList.size() != vertices) {
+            x = rand.nextInt((max - min) + 1) + min;
+            y = rand.nextInt((max - min) + 1) + min;
+
+            Vertex vertex = new Vertex(x, y);
+
+            if (!verticesList.contains(vertex)) {
+                addVertex(x, y);
+                verticesList.add(vertex);
+            }
+        }
+
+        while (!isConsistent()) {
+            Collections.shuffle(verticesList);
+
+            for (int j = 0; j < verticesList.size() - 1; j += 2) {
+                addEdge(verticesList.get(j).getX(), verticesList.get(j).getY(), verticesList.get(j + 1).getX(), verticesList.get(j + 1).getY());
+            }
+        }
+
+        Vertex firstVertex = null;
+        int currOddDegVerticesCnt = getOddDegVertices().size();
+
+        for (Vertex vertex : adjList.keySet()) {
+            if (currOddDegVerticesCnt == oddDegVertices) {
+                return;
+            }
+            // There are more odd degree vertices that we want
+            else if (currOddDegVerticesCnt > oddDegVertices && adjList.get(vertex).size() % 2 != 0) {
+                if (firstVertex == null) {
+                    firstVertex = vertex;
+                    continue;
+                }
+
+                addEdge(firstVertex.getX(), firstVertex.getY(), vertex.getX(), vertex.getY());
+                firstVertex = null;
+                currOddDegVerticesCnt -= 2;
+            }
+            // There are less odd degree vertices that we want
+            else if (currOddDegVerticesCnt < oddDegVertices && adjList.get(vertex).size() % 2 == 0) {
+                if (firstVertex == null) {
+                    firstVertex = vertex;
+                    continue;
+                }
+
+                addEdge(firstVertex.getX(), firstVertex.getY(), vertex.getX(), vertex.getY());
+                firstVertex = null;
+                currOddDegVerticesCnt += 2;
+            }
+        }
     }
 
 }
