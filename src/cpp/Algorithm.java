@@ -136,8 +136,6 @@ public class Algorithm {
         System.out.print("(0,0)");
 
         findEulerianCycle(g, new Vertex(0, 0), 0);
-
-        System.out.println();
     }
 
     private HashMap<Vertex, Vertex> findHeuristicMatch(Graph completeGraph, PriorityQueue<Double> weights) throws Exception {
@@ -249,10 +247,12 @@ public class Algorithm {
     }
 
     private void findEulerianCycle(Graph g, Vertex v, double totalCost) {
-        double currWeight = 0;
+        boolean hasNeighbor = false;
 
         // Recur over all vertices adjacent to this vertex
         for (int i = 0; i < g.getAdjList().get(v).size(); ++i) {
+            hasNeighbor = true;
+
             Edge edge = g.getAdjList().get(v).get(i);
 
             // Check if edge v - edge.getEndVertex is valid
@@ -260,14 +260,14 @@ public class Algorithm {
                 System.out.print(" -> " + edge.getEndVertex());
 
                 totalCost += edge.getWeight();
-                currWeight = edge.getWeight();
 
                 g.deleteEdge(v.getX(), v.getY(), edge.getEndVertex().getX(), edge.getEndVertex().getY());
                 findEulerianCycle(g, edge.getEndVertex(), totalCost);
             }
         }
 
-        if (v.equals(new Vertex(0, 0)) && totalCost != currWeight) {
+        // Show total cost when in vertex without neighbors
+        if (!hasNeighbor) {
             System.out.println("\nTotal cost: " + df.format(totalCost));
         }
     }

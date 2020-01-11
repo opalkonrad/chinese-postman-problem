@@ -164,8 +164,7 @@ public class Graph {
             edges += adjList.get(vertex).size();
         }
 
-        System.out.println("Vertices: " + adjList.size() + ", Edges: " + edges / 2);
-        System.out.println("Begin vertex [End vertex/weight, End vertex/weight...]");
+        System.out.println("Graph (vertices: " + adjList.size() + ", edges: " + edges / 2 + "). Representation: begin_vertex [end_vertex/weight, end_vertex/weight...]");
 
         adjList.forEach((key, value) -> System.out.println(key + " " + value));
     }
