@@ -1,8 +1,18 @@
 package cpp;
 
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.util.*;
 
 public class Algorithm {
+
+    private static DecimalFormat df;
+
+
+    public Algorithm() {
+        df = new DecimalFormat("0.0");
+        df.setRoundingMode(RoundingMode.DOWN);
+    }
 
     public void showCPPRoute(Graph g, int mode) {
         // Start in (0, 0)
@@ -117,10 +127,15 @@ public class Algorithm {
             }
         }
 
-        System.out.println("Chinese postman problem route:");
+        if (mode == 0) {
+            System.out.println("Chinese postman problem (heuristic) route:");
+        } else {
+            System.out.println("Chinese postman problem (accurate) route:");
+        }
+
         System.out.print("(0,0)");
 
-        findEulerianCycle(g, new Vertex(0, 0));
+        findEulerianCycle(g, new Vertex(0, 0), 0);
 
         System.out.println();
     }
@@ -233,7 +248,9 @@ public class Algorithm {
         return bestMatching;
     }
 
-    private void findEulerianCycle(Graph g, Vertex v) {
+    private void findEulerianCycle(Graph g, Vertex v, double totalCost) {
+        double currWeight = 0;
+
         // Recur over all vertices adjacent to this vertex
         for (int i = 0; i < g.getAdjList().get(v).size(); ++i) {
             Edge edge = g.getAdjList().get(v).get(i);
@@ -242,9 +259,16 @@ public class Algorithm {
             if (isNextEdgeValid(g, v, edge.getEndVertex())) {
                 System.out.print(" -> " + edge.getEndVertex());
 
+                totalCost += edge.getWeight();
+                currWeight = edge.getWeight();
+
                 g.deleteEdge(v.getX(), v.getY(), edge.getEndVertex().getX(), edge.getEndVertex().getY());
-                findEulerianCycle(g, edge.getEndVertex());
+                findEulerianCycle(g, edge.getEndVertex(), totalCost);
             }
+        }
+
+        if (v.equals(new Vertex(0, 0)) && totalCost != currWeight) {
+            System.out.println("\nTotal cost: " + df.format(totalCost));
         }
     }
 

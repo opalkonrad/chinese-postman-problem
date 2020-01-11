@@ -14,6 +14,23 @@ public class Graph {
         this.adjList = new HashMap<>();
     }
 
+    public Graph(Graph original) {
+        this.adjList = new HashMap<>(original.getAdjList());
+
+        // Copy adjList
+        for (Vertex vertex : original.getAdjList().keySet()) {
+            Vertex newVertex = new Vertex(vertex.getX(), vertex.getY());
+            this.adjList.put(newVertex, new LinkedList<>());
+
+            for (Edge edge : original.getAdjList().get(vertex)) {
+                Edge newEdge = new Edge(edge.getEndVertex(), edge.getWeight());
+                this.adjList.get(newVertex).add(newEdge);
+            }
+        }
+
+        this.rand = new Random();
+    }
+
     public HashMap<Vertex, LinkedList<Edge>> getAdjList() {
         return adjList;
     }
