@@ -80,9 +80,6 @@ public class Algorithm {
             HashMap<Vertex, HashMap<Vertex, Vertex>> prevVertexList = new HashMap<>();
             HashMap<Vertex, HashMap<Vertex, Double>> totalCostsList = new HashMap<>();
 
-            // Weight of edges - queue
-            PriorityQueue<Double> weights = new PriorityQueue<>();
-
             // Find Dijkstra's shortest paths among all odd degree vertices
             for (Vertex oddVertex : oddVertices) {
                 DijkstrasResultHolder dijkstrasResult = dijkstrasAlgorithm(g, oddVertex);
@@ -101,7 +98,6 @@ public class Algorithm {
                     }
 
                     completeGraph.addEdge(oddVertex.getX(), oddVertex.getY(), vertex.getX(), vertex.getY(), dijkstrasResult.getTotalCosts().get(vertex));
-                    weights.add(dijkstrasResult.getTotalCosts().get(vertex));
 
                     secondaryAdjList.get(oddVertex).add(vertex);
                 }
@@ -114,7 +110,7 @@ public class Algorithm {
             if (mode == 0) {
                 try {
                     // Find minimum weight perfect matching (heuristic approach)
-                    perfMatch = findHeuristicMatch(completeGraph, weights);
+                    perfMatch = findHeuristicMatch(completeGraph);
                 } catch (Exception e) {
                     System.out.println(e.getMessage());
                     return cppRoute;
@@ -158,45 +154,33 @@ public class Algorithm {
         return cppRoute;
     }
 
-    private HashMap<Vertex, Vertex> findHeuristicMatch(Graph completeGraph, PriorityQueue<Double> weights) throws Exception {
+    private HashMap<Vertex, Vertex> findHeuristicMatch(Graph completeGraph) throws Exception {
         // There will be number of vertices / 2 new edges
         int loops = completeGraph.getAdjList().size() / 2;
 
         HashMap<Vertex, Vertex> perfMatch = new HashMap<>();
 
         while (loops > 0) {
-            if (weights.peek() == null) {
-                throw new Exception("Priority queue returns null");
-            }
-
-            double currMinWeight = weights.poll();
+            double currMinWeight = Double.MAX_VALUE;
             Vertex begin = null;
             Vertex end = null;
 
-            outerloop:
             for (Vertex vertex : completeGraph.getAdjList().keySet()) {
                 for (Edge edge : completeGraph.getAdjList().get(vertex)) {
-                    // Find first edge which weight is equal to minimum weight from weights priority queue
-                    if (edge.getWeight() == currMinWeight) {
-                        perfMatch.put(vertex, edge.getEndVertex());
+                    // Find the smallest edge
+                    if (edge.getWeight() < currMinWeight) {
                         begin = vertex;
                         end = edge.getEndVertex();
-                        break outerloop;
+                        currMinWeight = edge.getWeight();
                     }
                 }
             }
 
+            // Add match
+            perfMatch.put(begin, end);
+
             if (begin == null || end == null) {
                 throw new Exception("Begin or end vertex is null");
-            }
-
-            // Remove weight of edge from queue that will be deleted
-            for (Edge edge : completeGraph.getAdjList().get(begin)) {
-                weights.remove(edge.getWeight());
-            }
-
-            for (Edge edge : completeGraph.getAdjList().get(end)) {
-                weights.remove(edge.getWeight());
             }
 
             // Delete vertices connected to minimum weight edge
