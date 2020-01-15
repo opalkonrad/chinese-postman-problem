@@ -1,15 +1,13 @@
 package cpp;
 
+import static cpp.Menu.startMenu;
+
 public class Main {
 
     public static void main(String[] args) {
 
-        Test test = new Test();
+        startMenu();
 
-        test.performCorrectnessTests();
-
-        test.warmUp();
-        test.performPerformanceTests(100, 50, 12);
     }
 
 }

@@ -169,15 +169,9 @@ public class Graph {
         adjList.forEach((key, value) -> System.out.println(key + " " + value));
     }
 
-    public void generateGraphFromFile(String path) {
+    public void generateGraphFromFile(String path) throws FileNotFoundException {
         File file = new File(path);
-        Scanner sc = null;
-        try {
-            sc = new Scanner(file);
-        } catch (FileNotFoundException e) {
-            System.out.println("File not found");
-            return;
-        }
+        Scanner sc = new Scanner(file);
 
         while (sc.hasNext()) {
             int x1, y1, x2, y2;

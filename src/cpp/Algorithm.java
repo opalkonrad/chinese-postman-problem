@@ -8,22 +8,41 @@ public class Algorithm {
 
     private static DecimalFormat df;
 
-
     public Algorithm() {
         df = new DecimalFormat("0.0");
         df.setRoundingMode(RoundingMode.DOWN);
     }
 
-    public void showCPPRoute(Graph g, int mode) {
+    public void showCPPRoute(LinkedList<Object> cppRoute, int mode) {
+        if (mode ==0 ) {
+            System.out.println("Chinese postman problem (heuristic) route:");
+        } else {
+            System.out.println("Chinese postman problem (accurate) route:");
+        }
+
+        for (int j = 0; j < cppRoute.size(); ++j) {
+            if (j == cppRoute.size() - 2) {
+                System.out.println(cppRoute.get(j));
+            } else if (j == cppRoute.size() - 1) {
+                System.out.println("Total cost: " + df.format(cppRoute.get(j)));
+            } else {
+                System.out.print(cppRoute.get(j) + " -> ");
+            }
+        }
+    }
+
+    public LinkedList<Object> countCPPRoute(Graph g, int mode) {
+        LinkedList<Object> cppRoute = new LinkedList<>();
+
         // Start in (0, 0)
         if (!g.getAdjList().containsKey(new Vertex(0, 0))) {
-            return;
+            return cppRoute;
         }
 
         // Only consistent graph can be solved, check mode, check if there are at least one vertex
         if (!g.isConsistent() || !(mode >= 0 && mode <= 1) || g.getAdjList().size() == 0) {
             System.out.println("Wrong graph");
-            return;
+            return cppRoute;
         }
 
         LinkedList<Vertex> oddVertices = g.getOddDegVertices();
@@ -98,7 +117,7 @@ public class Algorithm {
                     perfMatch = findHeuristicMatch(completeGraph, weights);
                 } catch (Exception e) {
                     System.out.println(e.getMessage());
-                    return;
+                    return cppRoute;
                 }
             }
             // Accurate
@@ -127,15 +146,16 @@ public class Algorithm {
             }
         }
 
-        if (mode == 0) {
-            System.out.println("Chinese postman problem (heuristic) route:");
-        } else {
-            System.out.println("Chinese postman problem (accurate) route:");
-        }
+        Vertex startVertex = new Vertex(0, 0);
+        cppRoute.add(startVertex);
+        double totalCost = 0.0;
 
-        System.out.print("(0,0)");
+        totalCost = findEulerianCycle(g, cppRoute, startVertex, totalCost);
 
-        findEulerianCycle(g, new Vertex(0, 0), 0);
+        // Add route cost as last object in list
+        cppRoute.add(totalCost);
+
+        return cppRoute;
     }
 
     private HashMap<Vertex, Vertex> findHeuristicMatch(Graph completeGraph, PriorityQueue<Double> weights) throws Exception {
@@ -246,30 +266,24 @@ public class Algorithm {
         return bestMatching;
     }
 
-    private void findEulerianCycle(Graph g, Vertex v, double totalCost) {
-        boolean hasNeighbor = false;
+    private double findEulerianCycle(Graph g, LinkedList<Object> cppRoute, Vertex v, double totalCost) {
 
         // Recur over all vertices adjacent to this vertex
         for (int i = 0; i < g.getAdjList().get(v).size(); ++i) {
-            hasNeighbor = true;
-
             Edge edge = g.getAdjList().get(v).get(i);
 
             // Check if edge v - edge.getEndVertex is valid
             if (isNextEdgeValid(g, v, edge.getEndVertex())) {
-                System.out.print(" -> " + edge.getEndVertex());
+                cppRoute.add(edge.getEndVertex());
 
                 totalCost += edge.getWeight();
 
                 g.deleteEdge(v.getX(), v.getY(), edge.getEndVertex().getX(), edge.getEndVertex().getY());
-                findEulerianCycle(g, edge.getEndVertex(), totalCost);
+                totalCost = findEulerianCycle(g, cppRoute, edge.getEndVertex(), totalCost);
             }
         }
 
-        // Show total cost when in vertex without neighbors
-        if (!hasNeighbor) {
-            System.out.println("\nTotal cost: " + df.format(totalCost));
-        }
+        return totalCost;
     }
 
     private boolean isNextEdgeValid(Graph g, Vertex v1, Vertex v2) {
